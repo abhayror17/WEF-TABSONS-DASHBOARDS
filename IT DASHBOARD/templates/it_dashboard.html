@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Channel Status - Abhay</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="alternate icon" href="/favicon.ico">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0d6efd; --secondary-color: #6c757d; --background-color: #f4f7f6;
+            --surface-color: #ffffff; --text-color: #212529; --border-color: #dee2e6;
+            --success-color: #198754; --error-color: #dc3545; --warning-color: #ffc107;
+            --preloader-background: #ECECEC; --preloader-bar-color: #388E3C;
+        }
+        body { background-color: var(--background-color); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .content-hidden { opacity: 0; visibility: hidden; }
+        .content-visible { opacity: 1; visibility: visible; transition: opacity 0.5s ease-in-out; }
+        #preloader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--preloader-background); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; transition: opacity 0.3s ease-out; }
+        .preloader-text { color: var(--preloader-bar-color); font-size: 1.8rem; font-weight: 900; margin-bottom: 20px; letter-spacing: 2px; }
+        .preloader-quote { color: var(--secondary-color); font-size: 1.1rem; font-style: italic; margin-top: 20px; opacity: 0.9; }
+        .progress-bar-container-loader { width: 300px; height: 30px; border: 3px solid var(--preloader-bar-color); border-radius: 15px; overflow: hidden; background-color: white; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+        .progress-bar-loader { height: 100%; width: 0%; background-color: var(--preloader-bar-color); border-radius: 12px; animation: indeterminate-load 8s ease-out forwards; }
+        @keyframes indeterminate-load { 0% { width: 0%; } 20% { width: 45%; } 50% { width: 75%; } 70% { width: 85%; } 100% { width: 90%; } }
+        .container { max-width: 1600px; }
+        .header { background: linear-gradient(90deg, #0d6efd, #0d63e3); color: white; padding: 1.5rem 2rem; border-radius: 0.5rem; margin-bottom: 2rem; text-align: center; box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3); }
+        .filter-form { background-color: #fff; padding: 1.5rem 2rem; border-radius: 0.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 2rem; }
+        .table-container { box-shadow: 0 4px 8px rgba(0,0,0,0.08); border-radius: 0.5rem; overflow: hidden; }
+        .table { margin-bottom: 0; }
+        .table thead th { background-color: #2c3e50; color: #ffffff; border-bottom: 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10; }
+        .table td, .table th { padding: 1rem 1.25rem; vertical-align: middle; border-top: 1px solid #e9ecef; }
+        .table-hover tbody tr:hover { background-color: #e9ecef; }
+        .status-eligible { background-color: #fff3cd !important; color: #664d03; }
+        .status-completed { background-color: #d1e7dd !important; color: #0f5132; }
+        .status-progress { background-color: #f8d7da !important; color: #842029; }
+        .time-data { font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-weight: 600; font-size: 0.95rem; color: #343a40; }
+    </style>
+</head>
+<body>
+    <div id="preloader">
+        <div class="preloader-text">LOADING...</div>
+        <div class="progress-bar-container-loader"><div id="loading-bar" class="progress-bar-loader"></div></div>
+        <div class="preloader-quote">"Great things take time"</div>
+    </div>
+
+    <div id="main-content" class="container my-4 content-hidden">
+        <div class="header"><h1>Channel Status Dashboard</h1></div>
+        <div class="filter-form">
+            <form method="POST" class="row g-3 align-items-end">
+                <div class="col-md-3"><label for="date" class="form-label"><b>Select Date:</b></label><input type="date" id="date" name="date" value="{{ selected_date }}" class="form-control"></div>
+                <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Get Status</button></div>
+                <div class="col-md-4 ms-auto"><label for="searchInput" class="form-label"><b>Search Channel:</b></label><input type="text" id="searchInput" class="form-control" placeholder="Type to search for a channel..."></div>
+            </form>
+        </div>
+        <div id="error-container"></div>
+        <div class="table-container">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Channel Name</th>
+                        <th scope="col">Logger End Time</th>
+                        <th scope="col">Last QC'd End Time</th>
+                    </tr>
+                </thead>
+                <tbody id="channelTableBody">
+                    <!-- Data will be injected here by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const selectedDate = "{{ selected_date }}";
+
+        async function loadDashboardData() {
+            const preloader = document.getElementById('preloader');
+            const mainContent = document.getElementById('main-content');
+            const loadingBar = document.getElementById('loading-bar');
+            const tableBody = document.getElementById('channelTableBody');
+            const errorContainer = document.getElementById('error-container');
+            
+            try {
+                const formData = new URLSearchParams();
+                formData.append('selected_date', selectedDate);
+
+                const response = await fetch('/dashboard_data_api', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (!response.ok || data.error) {
+                    throw new Error(data.error || `Server responded with status: ${response.status}`);
+                }
+
+                const dashboardData = data.dashboard_data || [];
+                if (dashboardData.length > 0) {
+                    let tableHtml = '';
+                    dashboardData.forEach((item, index) => {
+                        tableHtml += `
+                            <tr class="${item.status_class}">
+                                <td>${index + 1}</td>
+                                <td>${item.channel_name}</td>
+                                <td class="time-data">${item.logger_end_time}</td>
+                                <td class="time-data">${item.qc_end_time}</td>
+                            </tr>`;
+                    });
+                    tableBody.innerHTML = tableHtml;
+                } else {
+                    tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-4">No actionable data found for the selected date.</td></tr>';
+                }
+
+            } catch (error) {
+                console.error("Failed to load dashboard data:", error);
+                errorContainer.innerHTML = `<div class="alert alert-danger"><h4>Error</h4><p>${error.message}</p></div>`;
+                tableBody.innerHTML = ''; 
+            }
+
+            // --- Finalize and hide preloader ---
+            loadingBar.style.animation = 'none';
+            loadingBar.style.width = '100%';
+            setTimeout(() => {
+                preloader.style.opacity = '0';
+                setTimeout(() => {
+                    preloader.style.display = 'none';
+                    mainContent.classList.remove('content-hidden');
+                    mainContent.classList.add('content-visible');
+                }, 300);
+            }, 100);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load the main data
+            loadDashboardData();
+
+            // Initialize search filter functionality
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('keyup', function() {
+                const filter = searchInput.value.toLowerCase();
+                const tableBody = document.getElementById('channelTableBody');
+                const tableRows = tableBody.getElementsByTagName('tr');
+                for (let row of tableRows) {
+                    const channelNameCell = row.getElementsByTagName('td')[1];
+                    if (channelNameCell) {
+                        const channelName = channelNameCell.textContent || channelNameCell.innerText;
+                        row.style.display = channelName.toLowerCase().indexOf(filter) > -1 ? "" : "none";
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

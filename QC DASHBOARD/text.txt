@@ -1,0 +1,3 @@
+get data of the day with getdatagrid function
+get story data of that channel with getstory function
+qcstorydata store automaticallyrefrese

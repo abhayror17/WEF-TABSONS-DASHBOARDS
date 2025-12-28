@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Story Details</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; background-color: #f4f4f9; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        thead { background-color: #17a2b8; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        .container { max-width: 1400px; margin: auto; background: white; padding: 20px; border-radius: 8px; }
+        h1, h2 { color: #333; }
+        .back-link { display: inline-block; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{{ url_for('index') }}" class="back-link">&larr; Back to Summary</a>
+        <h1>Story Details for: {{ channel_name }}</h1>
+        <h2>Date: {{ date }}</h2>
+        
+        {% if story_data %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Duration</th>
+                        <th>Program Name</th>
+                        <th>Story</th>
+                        <th>Sub-Story</th>
+                        <th>Genre</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for story in story_data %}
+                    <tr>
+                        <td>{{ story.clipstarttime }}</td>
+                        <td>{{ story.clipendtime }}</td>
+                        <td>{{ story.clipduration }}</td>
+                        <td>{{ story.programname }}</td>
+                        <td>{{ story.story }}</td>
+                        <td>{{ story.substory }}</td>
+                        <td>{{ story.storygenrename }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No story data found for this channel on the selected date.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

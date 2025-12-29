@@ -1,0 +1,40 @@
+# Core Flask Framework
+Flask==2.3.3
+
+# WSGI Server for Production
+waitress==3.0.2
+
+# HTTP Requests Library
+requests==2.31.0
+
+# HTML Parsing for QC Dashboard
+beautifulsoup4==4.12.2
+
+# Caching Libraries
+cachetools==6.2.4
+
+# Task Scheduling for Database Operations
+schedule==1.2.2
+
+# Additional Flask Dependencies (automatically installed with Flask)
+Werkzeug>=2.3.7
+Jinja2>=3.1.2
+itsdangerous>=2.1.2
+click>=8.1.3
+blinker>=1.6.2
+
+# HTTP Client Dependencies (automatically installed with requests)
+charset-normalizer<4,>=2
+idna<4,>=2.5
+urllib3<3,>=1.21.1
+certifi>=2017.4.17
+
+# HTML Parsing Dependencies (automatically installed with beautifulsoup4)
+soupsieve>1.2
+
+# Additional System Dependencies
+colorama>=0.4.6
+MarkupSafe>=2.0
+
+# Database Support (SQLite is built-in to Python)
+# No additional packages needed for SQLite functionality

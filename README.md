@@ -15,6 +15,8 @@ A comprehensive Flask application that combines three separate dashboard systems
 - Identify channels eligible for pulling
 - Real-time status indicators with color coding
 - Advanced search and filtering capabilities
+- **SQLite Database Caching**: High-performance caching with 20-minute auto-refresh
+- **Smart Cache Management**: Sunday-to-Sunday data retention with automatic cleanup
 
 ### **Logger Dashboard** (`/logger-dashboard`)
 - Dual source monitoring for Xen and EQ loggers
@@ -36,6 +38,7 @@ A comprehensive Flask application that combines three separate dashboard systems
 wef/
 ├── app.py                          # Main unified Flask application
 ├── requirements.txt                # Python dependencies
+├── it_dashboard_cache.db           # SQLite database for IT Dashboard caching
 ├── static/                         # Unified static files
 │   ├── favicon.svg
 │   ├── favicon.png
@@ -114,12 +117,20 @@ The application will start on `http://localhost:5000`
 - Consolidated static file management
 - Unified template structure with consistent navigation
 
+### **SQLite Database Caching System**
+- **High-Performance Caching**: SQLite database for IT Dashboard data storage
+- **Auto-Refresh Mechanism**: Automatic data refresh every 20 minutes
+- **Smart Cache Management**: Sunday-to-Sunday data retention with Tuesday cleanup
+- **Three-Tier Storage**: Separate tables for logger data, QC data, and processed dashboard data
+- **Background Processing**: Scheduled tasks for cache maintenance and auto-refresh
+
 ### **Key Features**
-- **Caching**: TTL cache for Logger Dashboard performance optimization
+- **Advanced Caching**: SQLite database for IT Dashboard + TTL cache for Logger Dashboard
 - **Concurrent Processing**: ThreadPoolExecutor for parallel API calls
 - **Error Handling**: Comprehensive error handling and user feedback
 - **Session Management**: Persistent sessions for QC Dashboard authentication
 - **Data Processing**: Advanced data matching and normalization algorithms
+- **Automated Maintenance**: Background tasks for cache refresh and cleanup
 
 ### **External Integrations**
 - **Xen API**: Logger data fetching from `http://10.18.80.14:2996`
@@ -143,6 +154,9 @@ This will test all main routes and API endpoints, providing status reports for e
 - QC progress integration
 - Smart status classification (Completed, In Progress, Eligible)
 - Advanced search and filtering
+- **High-Performance Caching**: SQLite database with 20-minute auto-refresh
+- **Instant Response Times**: Near-instant loading with cached data
+- **Smart Cache Management**: Automatic data freshness monitoring
 
 ### **Logger Dashboard**
 - Multi-cluster support (National, South, East, West, Hindi Regional)
@@ -177,16 +191,20 @@ The application includes comprehensive error handling:
 
 ## 📈 Performance Optimizations
 
-- **Caching**: TTL cache for frequently accessed data
+- **SQLite Database Caching**: High-performance caching for IT Dashboard with 20-minute auto-refresh
+- **TTL Cache**: In-memory caching for Logger Dashboard performance optimization
 - **Concurrent Processing**: Parallel API calls for faster data loading
 - **Lazy Loading**: On-demand data fetching for better user experience
 - **Resource Optimization**: Efficient static file serving
+- **Smart Cache Management**: Automatic cleanup and maintenance to prevent database bloat
 
 ## 🔄 Auto-Refresh Features
 
+- **IT Dashboard**: 20-minute auto-refresh with SQLite caching for optimal performance
 - **Logger Dashboard**: 6-minute auto-refresh with visual countdown
 - **Real-time Updates**: Dynamic content updates without page reload
 - **Smart Refresh**: Preserves user state during updates
+- **Background Processing**: Automated cache refresh and maintenance tasks
 
 ## 📱 Mobile Compatibility
 
@@ -207,5 +225,8 @@ The Unified Dashboard System successfully consolidates three separate dashboard 
 3. **Shared Resources**: Consolidated static files and templates
 4. **Improved User Experience**: Modern design with smooth transitions and interactions
 5. **Enhanced Maintainability**: Centralized codebase for easier updates and maintenance
+6. **High-Performance Caching**: SQLite database system with 20-minute auto-refresh for optimal performance
+7. **Smart Data Management**: Sunday-to-Sunday retention with automatic Tuesday cleanup
+8. **Automated Maintenance**: Background tasks ensure data freshness and system efficiency
 
-The application is now running successfully on `http://localhost:5000` and all routes have been tested and verified to be working correctly.
+The application is now running successfully on `http://localhost:5000` and all routes have been tested and verified to be working correctly. The IT Dashboard now provides near-instant response times through intelligent caching while maintaining data freshness through automated refresh mechanisms.

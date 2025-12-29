@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Dashboard System</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #0dcaf0;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .dashboard-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            max-width: 1200px;
+            width: 100%;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary-color), #0a58ca);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dashboard-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: float 20s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-30px, -30px) rotate(180deg); }
+        }
+        
+        .dashboard-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .dashboard-header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .dashboard-content {
+            padding: 3rem 2rem;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .dashboard-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dashboard-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--info-color));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            border-color: var(--primary-color);
+        }
+        
+        .dashboard-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .dashboard-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--info-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .dashboard-card:hover .dashboard-icon {
+            transform: scale(1.1);
+            box-shadow: 0 10px 20px rgba(13, 110, 253, 0.3);
+        }
+        
+        .dashboard-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 1rem;
+        }
+        
+        .dashboard-description {
+            color: var(--secondary-color);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        
+        .dashboard-btn {
+            background: linear-gradient(135deg, var(--primary-color), var(--info-color));
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dashboard-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .dashboard-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(13, 110, 253, 0.3);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .dashboard-btn:hover::before {
+            left: 100%;
+        }
+        
+        .it-dashboard { --card-color: var(--success-color); }
+        .logger-dashboard { --card-color: var(--info-color); }
+        .qc-dashboard { --card-color: var(--warning-color); }
+        
+        .it-dashboard .dashboard-icon { background: linear-gradient(135deg, var(--success-color), #20c997); }
+        .logger-dashboard .dashboard-icon { background: linear-gradient(135deg, var(--info-color), #6ea8fe); }
+        .qc-dashboard .dashboard-icon { background: linear-gradient(135deg, var(--warning-color), #ffca2c); }
+        
+        .it-dashboard::before { background: linear-gradient(90deg, var(--success-color), #20c997); }
+        .logger-dashboard::before { background: linear-gradient(90deg, var(--info-color), #6ea8fe); }
+        .qc-dashboard::before { background: linear-gradient(90deg, var(--warning-color), #ffca2c); }
+        
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--secondary-color);
+            border-top: 1px solid #e9ecef;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-header h1 { font-size: 2rem; }
+            .dashboard-header { padding: 2rem 1rem; }
+            .dashboard-content { padding: 2rem 1rem; }
+            .dashboard-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1><i class="bi bi-speedometer2 me-3"></i>Unified Dashboard System</h1>
+            <p>Comprehensive monitoring and management platform for all operations</p>
+        </div>
+        
+        <div class="dashboard-content">
+            <div class="dashboard-grid">
+                <!-- IT Dashboard Card -->
+                <div class="dashboard-card it-dashboard">
+                    <div class="dashboard-icon">
+                        <i class="bi bi-gear-fill"></i>
+                    </div>
+                    <h3 class="dashboard-title">IT Dashboard</h3>
+                    <p class="dashboard-description">
+                        Monitor channel status, logger completion times, and QC progress. Track tagging completion and identify channels eligible for pulling.
+                    </p>
+                    <a href="{{ url_for('it_dashboard_page') }}" class="dashboard-btn">
+                        <i class="bi bi-arrow-right-circle me-2"></i>Launch IT Dashboard
+                    </a>
+                </div>
+                
+                <!-- Logger Dashboard Card -->
+                <div class="dashboard-card logger-dashboard">
+                    <div class="dashboard-icon">
+                        <i class="bi bi-broadcast"></i>
+                    </div>
+                    <h3 class="dashboard-title">Logger Dashboard</h3>
+                    <p class="dashboard-description">
+                        Dual source monitoring for Xen and EQ loggers. Track tagging progress by cluster and identify low duration channels.
+                    </p>
+                    <a href="{{ url_for('logger_dashboard') }}" class="dashboard-btn">
+                        <i class="bi bi-arrow-right-circle me-2"></i>Launch Logger Dashboard
+                    </a>
+                </div>
+                
+                <!-- QC Dashboard Card -->
+                <div class="dashboard-card qc-dashboard">
+                    <div class="dashboard-icon">
+                        <i class="bi bi-clipboard-check"></i>
+                    </div>
+                    <h3 class="dashboard-title">QC Dashboard</h3>
+                    <p class="dashboard-description">
+                        Quality control monitoring with cluster progress tracking. View channel details, story data, and completion status.
+                    </p>
+                    <a href="{{ url_for('qc_dashboard') }}" class="dashboard-btn">
+                        <i class="bi bi-arrow-right-circle me-2"></i>Launch QC Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p class="mb-0">
+                <i class="bi bi-code-slash me-2"></i>
+                Unified Dashboard System © 2024 | 
+                <span class="text-muted">Integrated Monitoring Platform</span>
+            </p>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Add some interactive effects
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.dashboard-card');
+            
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+            
+            // Add ripple effect to buttons
+            const buttons = document.querySelectorAll('.dashboard-btn');
+            buttons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    const ripple = document.createElement('span');
+                    ripple.classList.add('ripple');
+                    this.appendChild(ripple);
+                    
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+                    
+                    ripple.style.width = ripple.style.height = size + 'px';
+                    ripple.style.left = x + 'px';
+                    ripple.style.top = y + 'px';
+                    
+                    setTimeout(() => ripple.remove(), 600);
+                });
+            });
+        });
+    </script>
+    
+    <style>
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.6);
+            transform: scale(0);
+            animation: ripple-animation 0.6s ease-out;
+            pointer-events: none;
+        }
+        
+        @keyframes ripple-animation {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+        
+        .dashboard-btn {
+            position: relative;
+            overflow: hidden;
+        }
+    </style>
+</body>
+</html>

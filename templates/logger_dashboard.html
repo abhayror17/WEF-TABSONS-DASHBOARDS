@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logger Dashboard - Dual Source Monitoring</title>
+    <meta http-equiv="refresh" content="360">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #ffffff; --secondary-bg: #f8f9fa; --text-primary: #212529;
+            --text-secondary: #6c757d; --border-color: #dee2e6; --accent-color: #198754;
+            --warning-color: #ffc107; --danger-color: #dc3545; --xen-color: #0dcaf0;
+            --eq-color: #0d6efd; --preloader-background: #ECECEC; --preloader-bar-color: #388E3C;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--primary-bg); }
+        .content-hidden { opacity: 0; visibility: hidden; height: 0; overflow: hidden; }
+        .content-visible { opacity: 1; visibility: visible; height: auto; overflow: auto; transition: opacity 0.5s ease-in-out; }
+
+        #preloader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--preloader-background); z-index: 9999; display: flex;
+            justify-content: center; align-items: center; flex-direction: column;
+            transition: opacity 0.3s ease-out;
+        }
+        .preloader-text { color: var(--preloader-bar-color); font-size: 1.8rem; font-weight: 900; margin-bottom: 20px; letter-spacing: 2px; }
+        .preloader-quote { color: var(--secondary-color); font-size: 1.1rem; font-style: italic; margin-top: 20px; opacity: 0.9; }
+        .progress-bar-container-loader { width: 300px; height: 30px; border: 3px solid var(--preloader-bar-color); border-radius: 15px; overflow: hidden; background-color: white; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+        .progress-bar-loader { height: 100%; width: 0%; background-color: var(--preloader-bar-color); border-radius: 12px; transition: width 0.3s ease; animation: indeterminate-load 8s ease-out forwards; }
+        @keyframes indeterminate-load { 0% { width: 0%; } 20% { width: 45%; } 50% { width: 75%; } 70% { width: 85%; } 100% { width: 90%; } }
+
+        .navbar { background-color: var(--primary-bg) !important; border-bottom: 2px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .stats-card { border: 1px solid var(--border-color); border-radius: 8px; }
+        .stats-number { font-size: 2.5rem; font-weight: 700; }
+        .stats-label { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+        .table { border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .low-durn-row { background-color: #fff3cd !important; }
+        .search-input { border-radius: 25px; padding-left: 2.5rem; }
+        .search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #6c757d; }
+        .progress-chart { background-color: var(--primary-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; }
+        .filter-section { background-color: var(--secondary-bg); border-radius: 8px; padding: 2rem; border: 1px solid var(--border-color); }
+        .auto-refresh-indicator { background-color: var(--accent-color); color: white; padding: 0.3rem 0.8rem; border-radius: 15px; font-size: 0.8rem; font-weight: 600; }
+        .channel-name-cell { position: sticky; left: 0; background-color: white; z-index: 1; }
+        .low-durn-row .channel-name-cell { background-color: #fff3cd !important; }
+        .back-nav { margin-bottom: 1rem; }
+        .back-nav a { color: var(--accent-color); text-decoration: none; font-weight: 500; }
+        .back-nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div id="preloader">
+        <div class="preloader-text">LOADING...</div>
+        <div class="progress-bar-container-loader"><div id="loading-bar" class="progress-bar-loader"></div></div>
+        <div class="preloader-quote">"Patience is a virtue"</div>
+    </div>
+
+    <div id="main-content" class="content-hidden">
+        <div class="container mt-4">
+            <div class="back-nav">
+                <a href="{{ url_for('index') }}">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard Selection
+                </a>
+            </div>
+            
+            <nav class="navbar navbar-expand-lg">
+                <div class="container-fluid">
+                    <a class="navbar-brand" href="/logger-dashboard"><i class="bi bi-speedometer2 me-2"></i>Logger Dashboard</a>
+                    <div class="navbar-nav ms-auto">
+                        <button class="btn btn-outline-primary btn-sm me-2" id="refresh-btn" onclick="refreshData()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Refresh Data
+                        </button>
+                        <span class="auto-refresh-indicator" id="refresh-indicator"></span>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="row mb-4">
+                <div class="col-md-3 col-sm-6 mb-3"><div class="stats-card text-center p-3"><div class="stats-number" id="total-channels-stat">0</div><div class="stats-label"><i class="bi bi-broadcast me-1"></i>Total Channels</div></div></div>
+                <div class="col-md-3 col-sm-6 mb-3"><div class="stats-card text-center p-3"><div class="stats-number" id="low-durn-stat">0</div><div class="stats-label"><i class="bi bi-exclamation-triangle me-1"></i>Low Duration</div></div></div>
+                <div class="col-md-3 col-sm-6 mb-3"><div class="stats-card text-center p-3"><div class="stats-number" id="normal-stat">0</div><div class="stats-label"><i class="bi bi-check-circle me-1"></i>Normal Status</div></div></div>
+                <div class="col-md-3 col-sm-6 mb-3"><div class="stats-card text-center p-3"><div class="stats-number" id="done-stat">0%</div><div class="stats-label"><i class="bi bi-check-square me-1"></i>Tagging Done</div></div></div>
+            </div>
+
+            <div class="filter-section mb-4">
+                <form action="/logger-dashboard" method="GET" class="row g-3" id="filter-form">
+                    <div class="col-md-4"><label for="date" class="form-label"><i class="bi bi-calendar3 me-1"></i>Select Date</label><input type="date" class="form-control" id="date" name="date" value="{{ selected_date }}" required></div>
+                    <div class="col-md-6"><label for="cluster" class="form-label"><i class="bi bi-layers me-1"></i>Channel Cluster</label><select name="cluster" id="cluster" class="form-select" required>{% for cluster in clusters %}<option value="{{ cluster }}" {% if selected_cluster == cluster %}selected{% endif %}>{{ cluster }}</option>{% endfor %}</select></div>
+                    <div class="col-md-2 d-flex align-items-end"><button type="submit" id="analyze-button" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>Analyze</button></div>
+                </form>
+            </div>
+
+            <div class="progress-chart mb-4">
+                <h4 class="mb-3"><i class="bi bi-bar-chart me-2"></i>Tagging Progress by Cluster</h4>
+                <div id="progress-chart-container" class="row"><div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">Loading...</p></div></div>
+            </div>
+
+            <div id="error-container"></div>
+            <div id="results-container"><div class="text-center py-5"><h4 class="mt-3 text-muted">Loading Data...</h4></div></div>
+        </div>
+    </div>
+
+    <script>
+        let currentRefreshInterval;
+        
+        async function loadData(forceRefresh = false) {
+            const preloader = document.getElementById('preloader');
+            const mainContent = document.getElementById('main-content');
+            const loadingBar = document.getElementById('loading-bar');
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const selectedDate = urlParams.get('date') || document.getElementById('date').value;
+            const selectedCluster = urlParams.get('cluster') || document.getElementById('cluster').value;
+            
+            // Update form fields to match URL params if they exist
+            document.getElementById('date').value = selectedDate;
+            document.getElementById('cluster').value = selectedCluster;
+
+            try {
+                const [dashboardResponse, progressResponse] = await Promise.all([
+                    fetch(`/api/dashboard_data?date=${selectedDate}&cluster=${selectedCluster}${forceRefresh ? '&force_refresh=true' : ''}`),
+                    fetch(`/api/all_clusters_progress?date=${selectedDate}${forceRefresh ? '&force_refresh=true' : ''}`)
+                ]);
+
+                if (!dashboardResponse.ok) throw new Error(`Dashboard data error: ${dashboardResponse.statusText}`);
+                if (!progressResponse.ok) throw new Error(`Progress data error: ${progressResponse.statusText}`);
+
+                const dashData = await dashboardResponse.json();
+                const progressData = await progressResponse.json();
+
+                renderStatsCards(dashData);
+                renderProgressChart(progressData);
+                renderResults(dashData);
+
+            } catch (error) {
+                console.error("Data loading failed:", error);
+                document.getElementById('error-container').innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+                document.getElementById('results-container').innerHTML = '';
+            }
+
+            loadingBar.style.animation = 'none';
+            loadingBar.style.width = '100%';
+            setTimeout(() => {
+                preloader.style.opacity = '0';
+                setTimeout(() => {
+                    preloader.style.display = 'none';
+                    mainContent.classList.remove('content-hidden');
+                    mainContent.classList.add('content-visible');
+                }, 300);
+            }, 100);
+        }
+        
+        async function refreshData() {
+            // Clear existing refresh interval
+            if (currentRefreshInterval) {
+                clearInterval(currentRefreshInterval);
+            }
+            
+            // Show preloader
+            const preloader = document.getElementById('preloader');
+            const mainContent = document.getElementById('main-content');
+            const loadingBar = document.getElementById('loading-bar');
+            
+            preloader.style.display = 'flex';
+            preloader.style.opacity = '1';
+            mainContent.classList.remove('content-visible');
+            mainContent.classList.add('content-hidden');
+            loadingBar.style.animation = 'indeterminate-load 8s ease-out forwards';
+            loadingBar.style.width = '0%';
+            
+            // Disable refresh button during loading
+            const refreshBtn = document.getElementById('refresh-btn');
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Refreshing...';
+            
+            // Load fresh data
+            await loadData(true);
+            
+            // Re-enable refresh button
+            refreshBtn.disabled = false;
+            refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Refresh Data';
+            
+            // Restart refresh countdown
+            startRefreshCountdown(360, document.getElementById('refresh-indicator'));
+        }
+        
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Load data on page load (use cached data)
+            await loadData(false);
+            
+            // Start refresh countdown
+            startRefreshCountdown(360, document.getElementById('refresh-indicator'));
+        });
+
+        function renderStatsCards(data) {
+            const totalChannels = data.total_channels || 0;
+            const lowDurnCount = data.low_durn_channels.length || 0;
+            const normalCount = totalChannels - lowDurnCount;
+            const donePercentage = totalChannels > 0 ? ((normalCount / totalChannels) * 100).toFixed(1) : 0;
+            document.getElementById('total-channels-stat').textContent = totalChannels;
+            document.getElementById('low-durn-stat').textContent = lowDurnCount;
+            document.getElementById('normal-stat').textContent = normalCount;
+            document.getElementById('done-stat').textContent = `${donePercentage}%`;
+        }
+        
+        function renderProgressChart(progressData) {
+            const container = document.getElementById('progress-chart-container');
+            let html = '';
+            for (const clusterName in progressData) {
+                const p = progressData[clusterName];
+                const barClass = p.percentage >= 95 ? 'bg-success' : p.percentage >= 80 ? 'bg-warning' : 'bg-danger';
+                html += `<div class="col-md-6 mb-3"><div class="d-flex justify-content-between"><b>${clusterName}</b><small class="text-muted">${p.qced}/${p.total}</small></div><div class="progress" style="height:20px;"><div class="progress-bar ${barClass}" style="width:${p.percentage}%">${p.percentage}%</div></div></div>`;
+            }
+            container.innerHTML = html || '<p>No progress data.</p>';
+        }
+
+        function renderResults(data) {
+            const container = document.getElementById('results-container');
+            if (data.error_message) {
+                container.innerHTML = `<div class="alert alert-danger">${data.error_message}</div>`;
+                return;
+            }
+
+            let channelData = data.channel_data || [];
+            if (channelData.length === 0) {
+                container.innerHTML = `<div class="text-center py-5"><h4 class="mt-3 text-muted">No Data Available</h4></div>`;
+                return;
+            }
+
+            // --- NEW SORTING LOGIC ---
+            const getLatestEndTime = (logs) => {
+                return logs.reduce((latest, log) => {
+                    const endTime = log.end || '0';
+                    return (endTime > latest && !endTime.includes("Error")) ? endTime : latest;
+                }, '00:00:00');
+            };
+
+            channelData.sort((a, b) => {
+                const aIsLow = data.low_durn_channels.includes(a.id);
+                const bIsLow = data.low_durn_channels.includes(b.id);
+
+                if (aIsLow && !bIsLow) return -1; // a (low) comes first
+                if (!aIsLow && bIsLow) return 1;  // b (low) comes first
+
+                if (aIsLow && bIsLow) { // Both are low, sort by time
+                    return getLatestEndTime(a.logs).localeCompare(getLatestEndTime(b.logs));
+                }
+                
+                // Both are normal, sort by name
+                return a.name.localeCompare(b.name);
+            });
+            // --- END SORTING LOGIC ---
+
+            let tableHtml = `<div class="channel-search mb-3"><div class="position-relative"><i class="bi bi-search search-icon"></i><input type="text" class="form-control search-input" id="channelSearch" placeholder="Search..." onkeyup="filterChannels()"></div></div><div class="table-responsive"><table class="table table-hover table-bordered"><thead>...</thead><tbody id="channelTableBody">`;
+            // (Header is identical, shortened for brevity)
+            
+            channelData.forEach(channel => {
+                const isLowDurn = data.low_durn_channels.includes(channel.id);
+                channel.logs.forEach((log, index) => {
+                    tableHtml += `<tr class="channel-row ${isLowDurn ? 'low-durn-row' : ''}" data-channel-name="${channel.name.toLowerCase()}">`;
+                    if (index === 0) {
+                        tableHtml += `<td class="fw-bold channel-name-cell" rowspan="${channel.logs.length}">${channel.name}</td>`;
+                    }
+                    tableHtml += `<td class="text-center"><span class="badge ${log.logger === 'Xen' ? 'bg-info' : 'bg-primary'}">${log.logger}</span></td><td class="text-center">${log.start}</td><td class="text-center"><span class="fw-bold ${isLowDurn && log.end < '23:00:00' ? 'text-danger' : ''}">${log.end}</span></td>`;
+                    if (index === 0) {
+                        tableHtml += `<td class="text-center" rowspan="${channel.logs.length}"><span class="badge ${isLowDurn ? 'bg-warning text-dark' : 'bg-success'}">${isLowDurn ? 'Low Duration' : 'Normal'}</span></td>`;
+                    }
+                    tableHtml += `</tr>`;
+                });
+            });
+
+            tableHtml += `</tbody></table></div>`;
+            container.innerHTML = tableHtml.replace('<thead>...</thead>', document.querySelector('thead')?.outerHTML || '<thead><tr><th>Channel</th><th>Logger</th><th>Start</th><th>End</th><th>Status</th></tr></thead>');
+        }
+
+        function filterChannels() {
+            const filter = document.getElementById('channelSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#channelTableBody .channel-row');
+            const visibleChannels = new Set();
+            rows.forEach(row => { if (row.dataset.channelName.includes(filter)) visibleChannels.add(row.dataset.channelName); });
+            rows.forEach(row => { row.style.display = visibleChannels.has(row.dataset.channelName) ? '' : 'none'; });
+        }
+
+        function startRefreshCountdown(duration, display) {
+            let timer = duration;
+            setInterval(() => {
+                const minutes = Math.floor(timer / 60);
+                const seconds = timer % 60;
+                display.innerHTML = `<i class="bi bi-arrow-clockwise me-1"></i> ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                if (--timer < 0) location.reload();
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
